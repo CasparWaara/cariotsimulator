@@ -3,13 +3,16 @@ const conf = require('./app-config.json');
 const dweetClient = require('node-dweetio');
 const dweetio = new dweetClient();
 const readline = require('readline');
-
+const helpers = require('./helpers');
+let lastTrip = 0;
 let carStatus = {
     "speed": 0,
     "power": 0,
     "consumption": 0,
     "totaltrip": 0,
-    "fuelconsumed": 0
+    "fuelconsumed": 0,
+    "compass": 'n',
+    "heading": 0
 }
 
 
@@ -26,7 +29,7 @@ process.stdin.on('keypress', (str, key) => {
     const pressedKey = key.sequence;
 
     // In "raw" mode so we do our own kill switch
-    if(pressedKey === '\u0003') {
+    if (pressedKey === '\u0003') {
         process.exit();
         clearInterval(travelTimer);
     }
@@ -36,43 +39,66 @@ process.stdin.on('keypress', (str, key) => {
 
 });
 
-function updateCar(key){
-    if(key === 'w'){
-        if(carStatus.power < 5){
+function updateCar(key) {
+    if (key === 'w') {
+        if (carStatus.power < 5) {
             carStatus.power += 1;
         }
-    }else if(key === 's'){
-        if(carStatus.power > 0){
+    } else if (key === 's') {
+        if (carStatus.power > 0) {
             carStatus.power -= 1;
+        }
+    } else if (key === 'd') {
+        if (carStatus.heading < 359) {
+            carStatus.heading += 1;
+        } else {
+            carStatus.heading = 0;
+        }
+    } else if (key === 'a') {
+        if (carStatus.heading > 0) {
+            carStatus.heading -= 1;
+        } else {
+            carStatus.heading = 359;
         }
     }
     carStatus.consumption = conf.carconfig.specs[carStatus.power].consumption;
     carStatus.speed = conf.carconfig.specs[carStatus.power].speed;
-    travelAndConsumption();
+    carStatus.compass = helpers.degreesToLetter(carStatus.heading);
 }
 
 function travelAndConsumption() {
-    // sure we loose a bit of precission but I think it's ok in this case.
-    carStatus.totaltrip += Math.round(carStatus.speed * 0.277778);
+    // timer hits every second so calculate how much we have traveled
+    carStatus.totaltrip += carStatus.speed * 0.277778;
+
+    // calculate how much fuel we have used since last check
+    const tempTrip = carStatus.totaltrip - lastTrip;
+
+    carStatus.fuelconsumed += (carStatus.consumption / 100000) * tempTrip;
+
+    lastTrip = carStatus.totaltrip;
     output();
 }
 
-function output(){
+function output() {
     console.log('\x1Bc');
-    console.log('Power       : ' + carStatus.power + '\n' +
-    'Speed       : ' + carStatus.speed + ' km/h\n' +
-    'Consumption : ' + carStatus.consumption + ' l/100km\n' +
-    'Total trip  : ' + carStatus.totaltrip + ' m');
-   
+    console.log('Power         : ' + carStatus.power + '\n' +
+        'Speed         : ' + carStatus.speed + ' km/h\n' +
+        'Consumption   : ' + carStatus.consumption + ' l/100km\n' +
+        'Total trip    : ' + Math.round(carStatus.totaltrip) + ' m\n' +
+        'Fuel consumed : ' + carStatus.fuelconsumed + ' l\n' +
+        'Heading       : ' + carStatus.heading + '\n' +
+        'Compass       : ' + carStatus.compass);
 }
 
 
-function dweet(message){
-    dweetio.dweet_for('casparwaaracariot', {some:'data'}, function(err, dweet){
+function dweet(message) {
+    dweetio.dweet_for('casparwaaracariot', {
+        some: 'data'
+    }, function (err, dweet) {
         console.log(dweet.thing); // 'my-thing' 
         console.log(dweet.content); // The content of the dweet 
         console.log(dweet.created); // The create date of the dweet 
-     
+
     });
 }
 
