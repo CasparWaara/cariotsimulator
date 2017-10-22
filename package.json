@@ -18,6 +18,7 @@
   "author": "Kari Pönkkö",
   "license": "MIT",
   "dependencies": {
+    "geolib": "^2.0.23",
     "node-dweetio": "0.0.11"
   }
 }

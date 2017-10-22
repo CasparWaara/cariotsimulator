@@ -3,8 +3,10 @@ const conf = require('./app-config.json');
 const dweetClient = require('node-dweetio');
 const dweetio = new dweetClient();
 const readline = require('readline');
+const geo = require('geolib');
 const helpers = require('./helpers');
 let lastTrip = 0;
+
 let carStatus = {
     "speed": 0,
     "power": 0,
@@ -12,7 +14,9 @@ let carStatus = {
     "totaltrip": 0,
     "fuelconsumed": 0,
     "compass": 'n',
-    "heading": 0
+    "heading": 0,
+    "lat": 64.931223,
+    "lon": 25.386698
 }
 
 
@@ -76,6 +80,18 @@ function travelAndConsumption() {
     carStatus.fuelconsumed += (carStatus.consumption / 100000) * tempTrip;
 
     lastTrip = carStatus.totaltrip;
+
+    // if we have power, update the gps position
+    if (carStatus.power > 0) {
+        const lastPoint = {
+            lat: carStatus.lat,
+            lon: carStatus.lon
+        };
+        const newPosition = geo.computeDestinationPoint(lastPoint, tempTrip, carStatus.heading);
+        carStatus.lat = newPosition.latitude;
+        carStatus.lon = newPosition.longitude;
+    }
+
     output();
 }
 
@@ -87,7 +103,9 @@ function output() {
         'Total trip    : ' + Math.round(carStatus.totaltrip) + ' m\n' +
         'Fuel consumed : ' + carStatus.fuelconsumed + ' l\n' +
         'Heading       : ' + carStatus.heading + '\n' +
-        'Compass       : ' + carStatus.compass);
+        'Compass       : ' + carStatus.compass + '\n' +
+        'Latitude      : ' + carStatus.lat + '\n' +
+        'Longitude     : ' + carStatus.lon);
 }
 
 
