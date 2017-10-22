@@ -6,6 +6,9 @@ const readline = require('readline');
 const geo = require('geolib');
 const helpers = require('./helpers');
 let lastTrip = 0;
+let lastRun = process.hrtime();
+let timediffms;
+let updating = false;
 
 let carStatus = {
     "speed": 0,
@@ -38,7 +41,11 @@ process.stdin.on('keypress', (str, key) => {
         clearInterval(travelTimer);
     }
     if (!(/[^asdw]/i.test(pressedKey))) {
-        updateCar(pressedKey);
+        if (!updating) {
+            updating = true;
+            updateCar(pressedKey);
+            travelAndConsumption();
+        }
     }
 
 });
@@ -71,15 +78,22 @@ function updateCar(key) {
 }
 
 function travelAndConsumption() {
+    // TODO: get the last run time and check that difference and use that
+    // to calculate everything. That way we can use this function to update everything when we want to
+    // Do we need buffer for sending?
+    const timediff = process.hrtime(lastRun);
+    lastRun = process.hrtime();
+    timediffms = (timediff[0] * 1000) + (timediff[1] / 100000);
+
     // timer hits every second so calculate how much we have traveled
-    carStatus.totaltrip += carStatus.speed * 0.277778;
+    carStatus.totaltrip += carStatus.speed * (0.277778 * (timediffms / 1000));
 
     // calculate how much fuel we have used since last check
     const tempTrip = carStatus.totaltrip - lastTrip;
-
+    lastTrip = carStatus.totaltrip;
     carStatus.fuelconsumed += (carStatus.consumption / 100000) * tempTrip;
 
-    lastTrip = carStatus.totaltrip;
+
 
     // if we have power, update the gps position
     if (carStatus.power > 0) {
@@ -93,6 +107,7 @@ function travelAndConsumption() {
     }
 
     output();
+    updating = false;
 }
 
 function output() {
@@ -105,7 +120,8 @@ function output() {
         'Heading       : ' + carStatus.heading + '\n' +
         'Compass       : ' + carStatus.compass + '\n' +
         'Latitude      : ' + carStatus.lat + '\n' +
-        'Longitude     : ' + carStatus.lon);
+        'Longitude     : ' + carStatus.lon + '\n' +
+        'Debug         : ' + timediffms / 1000);
 }
 
 

@@ -32,7 +32,6 @@ function degreesToLetter(degree) {
     } else if (degree >= 337.5 && degree < 360) {
         return 'nnw';
     }
-
 }
 
 module.exports = {
