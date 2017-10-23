@@ -6,8 +6,8 @@ const readline = require('readline');
 const geo = require('geolib');
 const helpers = require('./helpers');
 let lastTrip = 0;
+let lastSend = process.hrtime();
 let lastRun = process.hrtime();
-let timediffms;
 let updating = false;
 
 let carStatus = {
@@ -19,7 +19,8 @@ let carStatus = {
     "compass": 'n',
     "heading": 0,
     "lat": 64.931223,
-    "lon": 25.386698
+    "lon": 25.386698,
+    "time": 0
 }
 
 
@@ -74,7 +75,7 @@ function updateCar(key) {
     }
     carStatus.consumption = conf.carconfig.specs[carStatus.power].consumption;
     carStatus.speed = conf.carconfig.specs[carStatus.power].speed;
-    carStatus.compass = helpers.degreesToLetter(carStatus.heading);
+    carStatus.compass = helpers.angleConvert(carStatus.heading).compass;
 }
 
 function travelAndConsumption() {
@@ -83,7 +84,7 @@ function travelAndConsumption() {
     // Do we need buffer for sending?
     const timediff = process.hrtime(lastRun);
     lastRun = process.hrtime();
-    timediffms = (timediff[0] * 1000) + (timediff[1] / 100000);
+    const timediffms = (timediff[0] * 1000) + (timediff[1] / 1000000);
 
     // timer hits every second so calculate how much we have traveled
     carStatus.totaltrip += carStatus.speed * (0.277778 * (timediffms / 1000));
@@ -91,9 +92,7 @@ function travelAndConsumption() {
     // calculate how much fuel we have used since last check
     const tempTrip = carStatus.totaltrip - lastTrip;
     lastTrip = carStatus.totaltrip;
-    carStatus.fuelconsumed += (carStatus.consumption / 100000) * tempTrip;
-
-
+    carStatus.fuelconsumed += (carStatus.consumption / 1000000) * tempTrip;
 
     // if we have power, update the gps position
     if (carStatus.power > 0) {
@@ -105,6 +104,8 @@ function travelAndConsumption() {
         carStatus.lat = newPosition.latitude;
         carStatus.lon = newPosition.longitude;
     }
+
+    carStatus.time = Date.now();
 
     output();
     updating = false;
@@ -118,22 +119,27 @@ function output() {
         'Total trip    : ' + Math.round(carStatus.totaltrip) + ' m\n' +
         'Fuel consumed : ' + carStatus.fuelconsumed + ' l\n' +
         'Heading       : ' + carStatus.heading + '\n' +
-        'Compass       : ' + carStatus.compass + '\n' +
+        'Compass       : ' + carStatus.compass + ' ' + helpers.angleConvert(carStatus.heading).arrow + '\n' +
         'Latitude      : ' + carStatus.lat + '\n' +
         'Longitude     : ' + carStatus.lon + '\n' +
-        'Debug         : ' + timediffms / 1000);
+        'Time          : ' + carStatus.time);
+    dweet();
 }
 
 
-function dweet(message) {
-    dweetio.dweet_for('casparwaaracariot', {
-        some: 'data'
-    }, function (err, dweet) {
-        console.log(dweet.thing); // 'my-thing' 
-        console.log(dweet.content); // The content of the dweet 
-        console.log(dweet.created); // The create date of the dweet 
-
-    });
+function dweet() {
+    // just debug purposes...don't choke the sending
+    const timediff = process.hrtime(lastSend);
+    
+    const timediffms = (timediff[0] * 1000) + (timediff[1] / 1000000);
+    if(timediffms / 1000 > 5){
+        dweetio.dweet_for('casparwaaracariot', carStatus, function (err, dweet) {
+            if(err){
+                console.log(err);
+            }
+            lastSend = process.hrtime();
+        });
+    }
 }
 
 const travelTimer = setInterval(travelAndConsumption, 1000);
