@@ -1,0 +1,24 @@
+{
+  "name": "car_iot_challenge",
+  "version": "1.0.0",
+  "description": "Car IoT simulator. Challenge 2",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "cariotsimulator"
+  },
+  "keywords": [
+    "car",
+    "iot",
+    "simulator"
+  ],
+  "author": "Kari Pönkkö",
+  "license": "MIT",
+  "dependencies": {
+    "geolib": "^2.0.23",
+    "node-dweetio": "0.0.11"
+  }
+}

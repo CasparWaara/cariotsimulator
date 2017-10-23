@@ -1,0 +1,29 @@
+{
+    "thingname": "casparwaaracariot",
+    "carconfig": {
+        "specs" :[{
+            "consumption": 0,
+            "speed":0
+        },
+        {
+            "consumption": 3,
+            "speed":10
+        },
+        {
+            "consumption": 3.5,
+            "speed":22
+        },
+        {
+            "consumption": 5,
+            "speed":50
+        },
+        {
+            "consumption": 8,
+            "speed":88
+        },
+        {
+            "consumption": 10.8,
+            "speed":121
+        }]
+    }
+}
