@@ -122,7 +122,8 @@ function output() {
         'Compass       : ' + carStatus.compass + ' ' + helpers.angleConvert(carStatus.heading).arrow + '\n' +
         'Latitude      : ' + carStatus.lat + '\n' +
         'Longitude     : ' + carStatus.lon + '\n' +
-        'Time          : ' + carStatus.time);
+        'Time          : ' + carStatus.time + '\n\n' +
+        'ctrl-c to quit');
     dweet();
 }
 
@@ -130,11 +131,11 @@ function output() {
 function dweet() {
     // just debug purposes...don't choke the sending
     const timediff = process.hrtime(lastSend);
-    
+
     const timediffms = (timediff[0] * 1000) + (timediff[1] / 1000000);
-    if(timediffms / 1000 > 5){
+    if (timediffms / 1000 > 5) {
         dweetio.dweet_for('casparwaaracariot', carStatus, function (err, dweet) {
-            if(err){
+            if (err) {
                 console.log(err);
             }
             lastSend = process.hrtime();
