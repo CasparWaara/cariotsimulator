@@ -5,10 +5,12 @@ const dweetio = new dweetClient();
 const readline = require('readline');
 const geo = require('geolib');
 const helpers = require('./helpers');
+const outTemp = 21;
 let lastTrip = 0;
 let lastSend = process.hrtime();
 let lastRun = process.hrtime();
 let updating = false;
+let trippari = 0;
 
 let carStatus = {
     "speed": 0,
@@ -20,7 +22,11 @@ let carStatus = {
     "heading": 0,
     "lat": 64.931223,
     "lon": 25.386698,
-    "time": 0
+    "time": 0,
+    "averagespeed": 0,
+    "drivingtime": 0,
+    "temperature": 21,
+    "averageconsumption": 0
 }
 
 
@@ -78,21 +84,20 @@ function updateCar(key) {
     carStatus.compass = helpers.angleConvert(carStatus.heading).compass;
 }
 
+// calculate "everything"
 function travelAndConsumption() {
-    // TODO: get the last run time and check that difference and use that
-    // to calculate everything. That way we can use this function to update everything when we want to
-    // Do we need buffer for sending?
     const timediff = process.hrtime(lastRun);
     lastRun = process.hrtime();
     const timediffms = (timediff[0] * 1000) + (timediff[1] / 1000000);
 
-    // timer hits every second so calculate how much we have traveled
+    // calculate how much we have traveled
     carStatus.totaltrip += carStatus.speed * (0.277778 * (timediffms / 1000));
 
     // calculate how much fuel we have used since last check
     const tempTrip = carStatus.totaltrip - lastTrip;
+    trippari = tempTrip;
     lastTrip = carStatus.totaltrip;
-    carStatus.fuelconsumed += (carStatus.consumption / 1000000) * tempTrip;
+    carStatus.fuelconsumed += (carStatus.consumption / 100) * (tempTrip / 1000);
 
     // if we have power, update the gps position
     if (carStatus.power > 0) {
@@ -104,7 +109,18 @@ function travelAndConsumption() {
         carStatus.lat = newPosition.latitude;
         carStatus.lon = newPosition.longitude;
     }
+    // bonus features
+    if (carStatus.speed > 0) {
+        carStatus.drivingtime += timediffms / 1000;
+        averageSpeed();
 
+        // lazy way of doing the temperature ;)
+        carStatus.temperature = outTemp - carStatus.power;
+
+        averageConsumption();
+    }
+
+    // when this was run at
     carStatus.time = Date.now();
 
     output();
@@ -113,20 +129,30 @@ function travelAndConsumption() {
 
 function output() {
     console.log('\x1Bc');
-    console.log('Power         : ' + carStatus.power + '\n' +
-        'Speed         : ' + carStatus.speed + ' km/h\n' +
-        'Consumption   : ' + carStatus.consumption + ' l/100km\n' +
-        'Total trip    : ' + Math.round(carStatus.totaltrip) + ' m\n' +
-        'Fuel consumed : ' + carStatus.fuelconsumed + ' l\n' +
-        'Heading       : ' + carStatus.heading + '\n' +
-        'Compass       : ' + carStatus.compass + ' ' + helpers.angleConvert(carStatus.heading).arrow + '\n' +
-        'Latitude      : ' + carStatus.lat + '\n' +
-        'Longitude     : ' + carStatus.lon + '\n' +
-        'Time          : ' + carStatus.time + '\n\n' +
+    console.log('Power               : ' + carStatus.power + '\n' +
+        'Speed               : ' + carStatus.speed + ' km/h\n' +
+        'Consumption         : ' + carStatus.consumption + ' l/100km\n' +
+        'Total trip          : ' + Math.round(carStatus.totaltrip) + ' m\n' +
+        'Fuel consumed       : ' + carStatus.fuelconsumed + ' l\n' +
+        'Heading             : ' + carStatus.heading + '\n' +
+        'Compass             : ' + carStatus.compass + ' ' + helpers.angleConvert(carStatus.heading).arrow + '\n' +
+        'Latitude            : ' + carStatus.lat + '\n' +
+        'Longitude           : ' + carStatus.lon + '\n' +
+        'Average speed       : ' + carStatus.averagespeed + ' km/h\n' +
+        'Average consumption : ' + carStatus.averageconsumption + ' l/100km\n' +
+        'Temperature         : ' + carStatus.temperature + ' c\n' +
+        'Time                : ' + carStatus.time + '\n\n' +
         'ctrl-c to quit');
     dweet();
 }
 
+function averageSpeed() {
+    carStatus.averagespeed = Math.round((carStatus.totaltrip / carStatus.drivingtime) * 3.6);
+}
+
+function averageConsumption() {
+    carStatus.averageconsumption = Math.round(100 / ((carStatus.totaltrip / 1000) / (carStatus.fuelconsumed)));
+}
 
 function dweet() {
     // just debug purposes...don't choke the sending
