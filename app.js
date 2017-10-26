@@ -49,10 +49,11 @@ process.stdin.on('keypress', (str, key) => {
 
     // check if the key is asdw
     if (!(/[^asdw]/i.test(pressedKey))) {
-        if (!updating) {
+        if (!updating) { 
             updating = true;
             updateCar(pressedKey);
             travelAndConsumption();
+            updating = false;
         }
     }
 
@@ -113,9 +114,8 @@ function travelAndConsumption() {
         carStatus.lon = newPosition.longitude;
     }
 
-    // check if we have moved -> update driving time...
-    // also if driving time is > 0 we can assume that the car
-    // is stopped for a light for example
+    // this check is to make sure that we start
+    // calculating average speed only after car has moved first time
     if(tempTrip > 0 || carStatus.drivingtime > 0){
         carStatus.drivingtime += timediffms / 1000;
         averageSpeed();    
@@ -130,7 +130,6 @@ function travelAndConsumption() {
     carStatus.time = Date.now();
 
     output();
-    updating = false;
 }
 
 function output() {
