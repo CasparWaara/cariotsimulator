@@ -46,6 +46,8 @@ process.stdin.on('keypress', (str, key) => {
         process.exit();
         clearInterval(travelTimer);
     }
+
+    // check if the key is asdw
     if (!(/[^asdw]/i.test(pressedKey))) {
         if (!updating) {
             updating = true;
@@ -56,6 +58,7 @@ process.stdin.on('keypress', (str, key) => {
 
 });
 
+// function to update car status if key is pressed
 function updateCar(key) {
     if (key === 'w') {
         if (carStatus.power < 5) {
@@ -85,6 +88,8 @@ function updateCar(key) {
 
 // calculate "everything"
 function travelAndConsumption() {
+
+    // check the diff from last run to update distance (and other parameters)
     const timediff = process.hrtime(lastRun);
     lastRun = process.hrtime();
     const timediffms = (timediff[0] * 1000) + (timediff[1] / 1000000);
@@ -97,8 +102,8 @@ function travelAndConsumption() {
     lastTrip = carStatus.totaltrip;
     carStatus.fuelconsumed += (carStatus.consumption / 100) * (tempTrip / 1000);
 
-    // if we have power, update the gps position
-    if (carStatus.power > 0) {
+    // if we have moved, update the gps position
+    if (carStatus.tempTrip > 0) {
         const lastPoint = {
             lat: carStatus.lat,
             lon: carStatus.lon
@@ -107,16 +112,19 @@ function travelAndConsumption() {
         carStatus.lat = newPosition.latitude;
         carStatus.lon = newPosition.longitude;
     }
-    // bonus features
-    if (carStatus.speed > 0) {
+
+    // check if we have moved -> update driving time...
+    // also if driving time is > 0 we can assume that the car
+    // is stopped for a light for example
+    if(tempTrip > 0 || carStatus.drivingtime > 0){
         carStatus.drivingtime += timediffms / 1000;
-        averageSpeed();
-
-        // lazy way of doing the temperature ;)
-        carStatus.temperature = outTemp - carStatus.power;
-
-        averageConsumption();
+        averageSpeed();    
     }
+
+    averageConsumption();
+
+    // lazy way of doing the temperature ;)
+    carStatus.temperature = outTemp - carStatus.power;
 
     // when this was run at
     carStatus.time = Date.now();
@@ -148,16 +156,20 @@ function averageSpeed() {
 }
 
 function averageConsumption() {
-    carStatus.averageconsumption = Math.round(100 / ((carStatus.totaltrip / 1000) / (carStatus.fuelconsumed)));
+    if(carStatus.totaltrip > 0){
+        carStatus.averageconsumption = Math.round(100 / ((carStatus.totaltrip / 1000) / (carStatus.fuelconsumed)));        
+    }else{
+        carStatus.averageconsumption = 0;
+    }
 }
 
 function dweet() {
-    // just debug purposes...don't choke the sending
+    // don't choke the sending (1s delay). In real world, this should be buffered
+    // but I think it's out of scope of this challenge
     const timediff = process.hrtime(lastSend);
-
     const timediffms = (timediff[0] * 1000) + (timediff[1] / 1000000);
     if (timediffms / 1000 > 5) {
-        dweetio.dweet_for('casparwaaracariot', carStatus, function (err, dweet) {
+        dweetio.dweet_for(conf.thingname, carStatus, function (err, dweet) {
             if (err) {
                 console.log(err);
             }
