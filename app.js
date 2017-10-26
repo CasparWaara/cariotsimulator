@@ -10,7 +10,6 @@ let lastTrip = 0;
 let lastSend = process.hrtime();
 let lastRun = process.hrtime();
 let updating = false;
-let trippari = 0;
 
 let carStatus = {
     "speed": 0,
@@ -95,7 +94,6 @@ function travelAndConsumption() {
 
     // calculate how much fuel we have used since last check
     const tempTrip = carStatus.totaltrip - lastTrip;
-    trippari = tempTrip;
     lastTrip = carStatus.totaltrip;
     carStatus.fuelconsumed += (carStatus.consumption / 100) * (tempTrip / 1000);
 
@@ -140,8 +138,7 @@ function output() {
         'Longitude           : ' + carStatus.lon + '\n' +
         'Average speed       : ' + carStatus.averagespeed + ' km/h\n' +
         'Average consumption : ' + carStatus.averageconsumption + ' l/100km\n' +
-        'Temperature         : ' + carStatus.temperature + ' c\n' +
-        'Time                : ' + carStatus.time + '\n\n' +
+        'Temperature         : ' + carStatus.temperature + ' c\n\n' +
         'ctrl-c to quit');
     dweet();
 }
