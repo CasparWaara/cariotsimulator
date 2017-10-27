@@ -10,6 +10,7 @@ let lastTrip = 0;
 let lastSend = process.hrtime();
 let lastRun = process.hrtime();
 let updating = false;
+let sending = false;
 
 let carStatus = {
     "speed": 0,
@@ -104,7 +105,7 @@ function travelAndConsumption() {
     carStatus.fuelconsumed += (carStatus.consumption / 100) * (tempTrip / 1000);
 
     // if we have moved, update the gps position
-    if (carStatus.tempTrip > 0) {
+    if (tempTrip > 0) {
         const lastPoint = {
             lat: carStatus.lat,
             lon: carStatus.lon
@@ -167,12 +168,15 @@ function dweet() {
     // but I think it's out of scope of this challenge
     const timediff = process.hrtime(lastSend);
     const timediffms = (timediff[0] * 1000) + (timediff[1] / 1000000);
-    if (timediffms / 1000 > 5) {
+    if (timediffms / 1000 > 1 && !sending) {
+        sending = true;
         dweetio.dweet_for(conf.thingname, carStatus, function (err, dweet) {
+            lastSend = process.hrtime();
+            sending = false;
             if (err) {
                 console.log(err);
             }
-            lastSend = process.hrtime();
+            
         });
     }
 }
