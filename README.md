@@ -7,3 +7,5 @@ To run:
 * node index.js
 
 You can check the dashboard from here: https://freeboard.io/board/03L88Z
+
+this has been made as a part of a competition...
