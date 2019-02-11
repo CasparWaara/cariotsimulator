@@ -1,4 +1,7 @@
 # Car IoT Simulator
+
+Made for RD Velho SW Developer Challenge 2018.
+
 Basic car iot simulator. You can use WASD keys to "drive" the car. On the freeboard public dashboard you can see live data from simulated car.
 
 To run:
